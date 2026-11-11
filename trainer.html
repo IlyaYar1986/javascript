@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренажёр — Строки в JavaScript</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --ink: #1a2233;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-soft: #e8effc;
+    --ok: #16803c;
+    --ok-soft: #e5f6ea;
+    --bad: #c2373c;
+    --bad-soft: #fdeaea;
+    --warn: #9a6b00;
+    --warn-soft: #fdf3d7;
+    --border: #e3e6ec;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 20px 24px 14px;
+  }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: #b9c1d4; font-size: 14px; }
+  .progress-wrap { padding: 12px 24px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .progress-bar { height: 10px; background: #e8eaf0; border-radius: 5px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0; background: var(--ok); border-radius: 5px; transition: width .3s; }
+  .progress-text { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+  .task {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+  .task h2 { font-size: 17px; margin: 0 0 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 700;
+    flex: none;
+  }
+  .status {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-left: auto;
+  }
+  .status.unsolved { background: #eef1f6; color: var(--muted); }
+  .status.solved { background: var(--ok-soft); color: var(--ok); }
+  .status.failed { background: var(--bad-soft); color: var(--bad); }
+  .task .desc { font-size: 14.5px; margin: 0 0 10px; }
+  .task .desc code {
+    font-family: var(--mono);
+    background: #eef1f6;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .examples {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #f2f4f8;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+  }
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.45;
+    resize: vertical;
+    background: #fcfcfd;
+  }
+  textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+  button.act {
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  button.act:hover { border-color: var(--accent); color: var(--accent); }
+  button.act.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.act.primary:hover { opacity: .9; color: #fff; }
+  button.act.link { border: none; background: none; color: var(--accent); text-decoration: underline; padding: 8px 4px; }
+  .tests { margin-top: 12px; }
+  .test {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .test.pass { background: var(--ok-soft); border-color: #bfe5cc; }
+  .test.fail { background: var(--bad-soft); border-color: #f0c2c4; }
+  .test .mark { font-weight: 700; width: 20px; flex: none; }
+  .test.pass .mark { color: var(--ok); }
+  .test.fail .mark { color: var(--bad); }
+  .test .pair { display: flex; gap: 14px; flex-wrap: wrap; }
+  .test .lbl { color: var(--muted); }
+  .runmsg { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+  .runmsg.bad { background: var(--bad-soft); color: #8e2226; }
+  .runmsg.ok { background: var(--ok-soft); color: #14522c; }
+  .hintbox {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--warn-soft);
+    border: 1px solid #ecd9a0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--warn);
+  }
+  .footer-note { color: var(--muted); font-size: 13px; margin-top: 30px; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Тренажёр: работа со строками в JavaScript</h1>
+  <p>В каждой задаче напишите функцию <b>solve(s)</b>, которая принимает строку и возвращает результат. Проверка — автоматическая.</p>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="pfill"></div></div>
+  <div class="progress-text" id="ptext">Решено 0 из 8</div>
+</div>
+
+<main id="instruction">
+  <div class="card">
+    <h2>Как выполнять задания — инструкция</h2>
+    <p class="lead" style="color:var(--muted);font-size:14.5px;margin:0 0 12px">Прочитайте этот блок один раз — дальше по нему работают все 8 задач.</p>
+
+    <h3 style="font-size:15.5px;margin:12px 0 6px">1. Что нужно написать</h3>
+    <p style="font-size:14.5px;margin:0 0 8px">
+      В поле каждой задачи напишите <b>функцию с именем <code class="inline">solve</code></b>. Она принимает один аргумент — строку
+      (в примерах она называется <code class="inline">s</code>) — и с помощью <code class="inline">return</code> возвращает результат.
+      Это единственная форма ответа: тренажёр сам подставит в вашу функцию проверочные строки и сравнит результат с правильным.
+    </p>
+    <div class="out">function solve(s) {
+  // ваши действия со строкой s
+  return результат;   // обязательно вернуть!
+}</div>
+
+    <h3 style="font-size:15.5px;margin:14px 0 6px">2. Разобранный пример — так выглядит готовое решение</h3>
+    <p style="font-size:14.5px;margin:0 0 8px">
+      Задача: «вернуть строку без крайних пробелов, в нижнем регистре». Решение:
+    </p>
+    <div class="out">function solve(s) {
+  return s.trim().toLowerCase();
+}
+
+// solve("  ПРИВЕТ  ") вернёт "привет"</div>
+    <p style="font-size:14.5px;margin:8px 0 0">
+      Никаких <code class="inline">console.log</code>, <code class="inline">prompt</code> и чтения ввода не нужно —
+      только функция и <code class="inline">return</code>. Тренажёр сам выведет результат в отчёт по тестам.
+    </p>
+
+    <h3 style="font-size:15.5px;margin:14px 0 6px">3. Как проходит проверка</h3>
+    <p style="font-size:14.5px;margin:0 0 8px">
+      Нажмите <b>«Проверить»</b> — под задачей появится отчёт по каждому тесту:
+      вход, «ожидалось» и «получено». Зелёная строка <b>✓</b> — тест пройден, красная <b>✗</b> —
+      ваша функция вернула не то (сравните строки «ожидалось» и «получено»). Задача решена,
+      когда пройдены <b>все</b> тесты. Если в коде ошибка — тренажёр покажет её текст: исправьте и проверьте снова.
+    </p>
+
+    <h3 style="font-size:15.5px;margin:14px 0 6px">4. Практические правила</h3>
+    <ul style="font-size:14.5px;margin:0 0 8px;padding-left:20px">
+      <li>В каждой задаче — своя функция <code class="inline">solve</code>, писать надо только её, один раз.</li>
+      <li>Кнопка <b>«Шаблон»</b> вставляет заготовку функции — дальше дописываете тело.</li>
+      <li>Кнопка <b>«Подсказка»</b> подскажет нужные методы, но не даст готовый код.</li>
+      <li>Код каждой задачи сохраняется в браузере автоматически — можно закрыть страницу и вернуться позже.</li>
+      <li>Используйте только методы из лекции: <code class="inline">trim, slice, replace, replaceAll, split, join, indexOf, includes, toUpperCase, toLowerCase, length</code>.</li>
+      <li>Пишите код маленькими шагами: добавили метод — сразу «Проверить», так легче найти ошибку.</li>
+    </ul>
+  </div>
+</main>
+
+<main id="tasks"></main>
+
+<p class="footer-note">
+  Код сохраняется в вашем браузере (localStorage). Тренажёр выполняет ваш код локально — открывайте только собственные решения.
+</p>
+
+<script>
+"use strict";
+
+var TASKS = [
+  {
+    title: "Очистка строки",
+    diff: "базовая",
+    desc: 'Верните строку <code>s</code> без крайних пробелов и в верхнем регистре. Используйте <code>trim()</code> и <code>toUpperCase()</code>.',
+    hint: "Методы можно вызывать цепочкой: s.trim().toUpperCase(). Не забудьте вернуть результат через return.",
+    tests: [
+      { in: "  привет, мир  ", out: "ПРИВЕТ, МИР" },
+      { in: "js", out: "JS" },
+      { in: "   ", out: "" }
+    ]
+  },
+  {
+    title: "Последний символ",
+    diff: "базовая",
+    desc: 'Верните последний символ строки <code>s</code>. Если строка пустая — верните пустую строку <code>""</code>.',
+    hint: "Индексация с нуля: последний символ — s[s.length - 1]. Для пустой строки length = 0, проверьте это отдельно.",
+    tests: [
+      { in: "JavaScript", out: "t" },
+      { in: "П", out: "П" },
+      { in: "", out: "" }
+    ]
+  },
+  {
+    title: "Замена всех вхождений",
+    diff: "базовая",
+    desc: 'Верните строку, где все буквы <code>ё</code> заменены на <code>е</code>. Ловушка: <code>replace</code> меняет только первое вхождение.',
+    hint: "Используйте replaceAll (или split(\"ё\").join(\"е\") — тоже допустимо).",
+    tests: [
+      { in: "ёжик под ёлкой", out: "ежик под елкой" },
+      { in: "все ё ё ё", out: "все е е е" },
+      { in: "текст без е", out: "текст без е" }
+    ]
+  },
+  {
+    title: "Инициалы из ФИО",
+    diff: "средняя",
+    desc: 'ФИО приходит строкой: <code>"иванов иван иванович"</code>. Верните инициалы вида <code>"И.И.И."</code> — первые буквы слов в верхнем регистре, разделённые точками, с точкой в конце. Между словами может быть несколько пробелов подряд.',
+    hint: "Конвейер из лекции: split(/\\s+/) разбивает по любому количеству пробелов, затем map(n => n[0].toUpperCase()), затем join(\".\") + \".\"",
+    tests: [
+      { in: "иванов иван иванович", out: "И.И.И." },
+      { in: "  сидорова   анна  ", out: "С.А." },
+      { in: "петров пётр", out: "П.П." }
+    ]
+  },
+  {
+    title: "Маскировка телефона",
+    diff: "средняя",
+    desc: 'Верните строку, где из номера телефона <code>s</code> сначала убраны все символы, кроме цифр, а затем все цифры, кроме последних четырёх, заменены звёздочками <code>*</code>. Пример из лекции: <code>"+7 (917) 123-45-67"</code> → <code>"*******4567"</code>.',
+    hint: "Шаг 1: s.replace(/\\D/g, \"\") — оставить только цифры. Шаг 2: digits.slice(-4).padStart(digits.length, \"*\").",
+    tests: [
+      { in: "+7 (917) 123-45-67", out: "*******4567" },
+      { in: "89171234567", out: "*******4567" },
+      { in: "1234", out: "1234" }
+    ]
+  },
+  {
+    title: "Подсчёт гласных",
+    diff: "средняя",
+    desc: 'Верните количество гласных букв русского алфавита в строке <code>s</code>. Гласные: <code>"аеёиоуыэюя"</code>. Регистр не важен, букву <code>ё</code> тоже считать.',
+    hint: 'Приведите строку к нижнему регистру, разберите посимвольно (split("")) и посчитайте символы, входящие в "аеёиоуыэюя" — удобно через indexOf.',
+    tests: [
+      { in: "Привет, Мир", out: "3" },
+      { in: "Ёлка", out: "2" },
+      { in: "брв", out: "0" }
+    ]
+  },
+  {
+    title: "Нормализация заголовка",
+    diff: "повышенная",
+    desc: 'Задание из домашней работы. Верните заголовок: без крайних пробелов, все <code>_</code> заменены на пробелы, первая буква — заглавная, остальные — как были. Пример: <code>"  вой_и_мир "</code> → <code>"Вой и мир"</code>.',
+    hint: "Цепочка: s.trim().replaceAll(\"_\", \" \"), затем первую букву — toUpperCase, остальное — срез slice(1). Соберите через шаблонный литерал.",
+    tests: [
+      { in: "  вой_и_мир ", out: "Вой и мир" },
+      { in: "каталог_товаров", out: "Каталог товаров" },
+      { in: "  JS", out: "JS" }
+    ]
+  },
+  {
+    title: "Инверсия регистра",
+    diff: "повышенная",
+    desc: 'Верните строку, где регистр каждой буквы перевёрнут: заглавные стали строчными и наоборот. Символы, не являющиеся буквами (цифры, знаки), не меняются. Пример: <code>"Привет, Мир!"</code> → <code>"пРИВЕТ, мИР!"</code>.',
+    hint: "Разберите строку посимвольно (split(\"\")), для каждой буквы сравните её с собой в верхнем и нижнем регистре: если c === c.toUpperCase(), значит буква была заглавной — переводим в нижний. Соберите обратно через join(\"\").",
+    tests: [
+      { in: "Привет, Мир!", out: "пРИВЕТ, мИР!" },
+      { in: "JS 2026", out: "js 2026" },
+      { in: "абВгД", out: "АБвГд" }
+    ]
+  }
+];
+
+var STORAGE_KEY = "jsStringsTrainer_v1";
+var state = {};
+try {
+  state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {};
+} catch (e) { state = {}; }
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* приватный режим */ }
+}
+
+function $(id) { return document.getElementById(id); }
+
+function buildTasks() {
+  var root = document.getElementById("tasks");
+  TASKS.forEach(function (task, ti) {
+    var card = document.createElement("div");
+    card.className = "task";
+    card.id = "task" + ti;
+
+    var h2 = document.createElement("h2");
+    var num = document.createElement("span");
+    num.className = "num";
+    num.textContent = ti + 1;
+    h2.appendChild(num);
+    var titleSpan = document.createElement("span");
+    titleSpan.textContent = task.title;
+    h2.appendChild(titleSpan);
+    var diff = document.createElement("span");
+    diff.className = "status unsolved";
+    diff.id = "diff" + ti;
+    diff.textContent = task.diff;
+    diff.style.background = "#eef1f6";
+    diff.style.color = "var(--muted)";
+    diff.style.fontWeight = "400";
+    h2.appendChild(diff);
+    var status = document.createElement("span");
+    status.className = "status unsolved";
+    status.id = "status" + ti;
+    status.textContent = "не решена";
+    h2.appendChild(status);
+    card.appendChild(h2);
+
+    var desc = document.createElement("p");
+    desc.className = "desc";
+    desc.innerHTML = task.desc;
+    card.appendChild(desc);
+
+    var ex = document.createElement("div");
+    ex.className = "examples";
+    var lines = task.tests.map(function (t) {
+      return "solve(" + JSON.stringify(t.in) + ")  →  " + JSON.stringify(t.out);
+    });
+    ex.textContent = "Проверочные примеры:\n" + lines.join("\n");
+    card.appendChild(ex);
+
+    var ta = document.createElement("textarea");
+    ta.id = "code" + ti;
+    ta.spellcheck = false;
+    ta.placeholder = "function solve(s) {\n  // ваш код здесь\n  return ...;\n}";
+    ta.value = state[ti] ? state[ti].code : "";
+    card.appendChild(ta);
+
+    var btnrow = document.createElement("div");
+    btnrow.className = "btnrow";
+    var check = document.createElement("button");
+    check.className = "act primary";
+    check.textContent = "Проверить";
+    check.addEventListener("click", function () { runTask(ti); });
+    btnrow.appendChild(check);
+
+    var clear = document.createElement("button");
+    clear.className = "act";
+    clear.textContent = "Очистить";
+    clear.addEventListener("click", function () {
+      ta.value = "";
+      delete state[ti];
+      saveState();
+      setStatus(ti, "unsolved", "не решена");
+      clearResults(ti);
+      updateProgress();
+    });
+    btnrow.appendChild(clear);
+
+    var tpl = document.createElement("button");
+    tpl.className = "act";
+    tpl.textContent = "Шаблон";
+    tpl.addEventListener("click", function () {
+      ta.value = "function solve(s) {\n  // работайте со строкой s\n  return ;\n}";
+      ta.focus();
+    });
+    btnrow.appendChild(tpl);
+
+    var hintBtn = document.createElement("button");
+    hintBtn.className = "act link";
+    hintBtn.textContent = "Подсказка";
+    hintBtn.addEventListener("click", function () {
+      var box = document.getElementById("hint" + ti);
+      box.style.display = box.style.display === "none" ? "block" : "none";
+    });
+    btnrow.appendChild(hintBtn);
+    card.appendChild(btnrow);
+
+    var hint = document.createElement("div");
+    hint.className = "hintbox";
+    hint.id = "hint" + ti;
+    hint.style.display = "none";
+    hint.innerHTML = "<b>Подсказка.</b> " + task.hint;
+    card.appendChild(hint);
+
+    var testsDiv = document.createElement("div");
+    testsDiv.className = "tests";
+    testsDiv.id = "tests" + ti;
+    card.appendChild(testsDiv);
+
+    var msg = document.createElement("div");
+    msg.id = "msg" + ti;
+    card.appendChild(msg);
+
+    root.appendChild(card);
+  });
+}
+
+function setStatus(ti, cls, text) {
+  var st = document.getElementById("status" + ti);
+  st.className = "status " + cls;
+  st.textContent = text;
+}
+
+function clearResults(ti) {
+  document.getElementById("tests" + ti).innerHTML = "";
+  var msg = document.getElementById("msg" + ti);
+  msg.innerHTML = "";
+  msg.className = "";
+}
+
+function runTask(ti) {
+  var task = TASKS[ti];
+  var code = document.getElementById("code" + ti).value;
+
+  state[ti] = { code: code };
+  saveState();
+
+  clearResults(ti);
+  var msg = document.getElementById("msg" + ti);
+  var testsDiv = document.getElementById("tests" + ti);
+
+  if (code.trim() === "") {
+    msg.className = "runmsg bad";
+    msg.textContent = "Поле кода пустое. Напишите функцию solve(s).";
+    setStatus(ti, "failed", "ошибка");
+    updateProgress();
+    return;
+  }
+
+  var fn;
+  try {
+    fn = new Function("s", code + "\n;return typeof solve === 'function' ? solve(s) : 'NO_SOLVE';");
+  } catch (e) {
+    msg.className = "runmsg bad";
+    msg.textContent = "Синтаксическая ошибка в коде: " + e.message;
+    setStatus(ti, "failed", "ошибка");
+    updateProgress();
+    return;
+  }
+
+  var passed = 0;
+  var anyError = false;
+
+  task.tests.forEach(function (test, k) {
+    var got;
+    var ok = false;
+    var errorText = null;
+    try {
+      got = fn(test.in);
+      if (got === "NO_SOLVE") {
+        errorText = "функция solve не найдена — определите function solve(s) {...}";
+      } else {
+        // Приведение к строке, если студент вернул число в числовых задачах
+        if (typeof got !== "string" && got !== null && got !== undefined) {
+          got = String(got);
+        }
+        ok = got === test.out;
+      }
+    } catch (e) {
+      errorText = "Ошибка выполнения: " + e.message;
+    }
+
+    var row = document.createElement("div");
+    row.className = "test " + (ok ? "pass" : "fail");
+    var mark = document.createElement("span");
+    mark.className = "mark";
+    mark.textContent = ok ? "✓" : "✗";
+    row.appendChild(mark);
+    var pair = document.createElement("span");
+    pair.className = "pair";
+    var inp = document.createElement("span");
+    inp.innerHTML = '<span class="lbl">вход:</span> ' + escapeHtml(JSON.stringify(test.in));
+    var exp = document.createElement("span");
+    exp.innerHTML = '<span class="lbl">ожидалось:</span> ' + escapeHtml(JSON.stringify(test.out));
+    pair.appendChild(inp);
+    pair.appendChild(exp);
+    if (errorText) {
+      var err = document.createElement("span");
+      err.innerHTML = '<span class="lbl">ошибка:</span> ' + escapeHtml(errorText);
+      pair.appendChild(err);
+      anyError = true;
+    } else if (!ok) {
+      var g = document.createElement("span");
+      g.innerHTML = '<span class="lbl">получено:</span> ' + escapeHtml(JSON.stringify(got));
+      pair.appendChild(g);
+    }
+    row.appendChild(pair);
+    testsDiv.appendChild(row);
+
+    if (ok) passed++;
+  });
+
+  if (passed === task.tests.length) {
+    msg.className = "runmsg ok";
+    msg.textContent = "Задача решена! Все проверки пройдены.";
+    setStatus(ti, "solved", "решена ✓");
+    state[ti].solved = true;
+  } else {
+    msg.className = "runmsg bad";
+    msg.textContent = "Пройдено " + passed + " из " + task.tests.length + " проверок." + (anyError ? " Исправьте ошибки в коде." : " Сравните «ожидалось» и «получено».");
+    setStatus(ti, "failed", "не решена");
+    state[ti].solved = false;
+  }
+  saveState();
+  updateProgress();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function updateProgress() {
+  var solved = 0;
+  TASKS.forEach(function (_, ti) {
+    if (state[ti] && state[ti].solved) solved++;
+  });
+  document.getElementById("pfill").style.width = (solved / TASKS.length * 100) + "%";
+  document.getElementById("ptext").textContent = "Решено " + solved + " из " + TASKS.length;
+}
+
+buildTasks();
+updateProgress();
+</script>
+</body>
+</html>
